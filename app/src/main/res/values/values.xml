@@ -1,0 +1,11 @@
+<resources>
+    <color name="primary_blue">#003060</color>
+    <color name="secondary_blue">#0E86D4</color>
+    <color name="accent_green">#76B947</color>
+    <color name="deep_green">#2F5233</color>
+    <color name="light_gray">#F5F5F5</color>
+    <color name="colorPrimary">@color/primary_blue</color>
+    <color name="colorPrimaryContainer">@color/primary_blue</color>
+    <color name="colorSecondary">@color/secondary_blue</color>
+    <color name="colorSecondaryContainer">@color/secondary_blue</color>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <attr name="colorTertiary" format="color|reference" />
+    <attr name="colorOnTertiary" format="color|reference" />
+</resources>
