@@ -1,29 +1,17 @@
-package com.example.alertifyapp.components
+package com.example.alertify.screens
 
 import android.content.Context
+import android.view.MotionEvent
+import android.view.View
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.view.MotionEvent
-import android.view.View
-
-
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import com.example.alertifyapp.components.DrawingView
-
-class DrawingScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            DrawingView(this)
-        }
-    }
-}
-
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 
 class DrawingView(context: Context) : View(context) {
     private val paths = mutableListOf<Path>()
@@ -65,5 +53,12 @@ class DrawingView(context: Context) : View(context) {
         super.onDraw(canvas)
         paths.forEach { canvas.drawPath(it, paint) }
         canvas.drawPath(currentPath, paint)
+    }
+}
+
+@Composable
+fun DrawingScreen() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(factory = { context -> DrawingView(context) })
     }
 }

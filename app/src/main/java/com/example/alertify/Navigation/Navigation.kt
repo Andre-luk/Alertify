@@ -10,6 +10,9 @@ import com.example.alertify.screens.main.HomeScreen
 import com.example.alertify.screens.main.UserHomeScreen // Assurez-vous d'avoir un UserHomeScreen défini
 import com.example.alertify.screens.splash.SplashScreen
 import androidx.compose.runtime.Composable
+import com.example.alertify.screens.DrawingScreen
+
+
 
 @Composable
 fun AlertifyNavHost(navController: NavHostController) {
@@ -25,6 +28,9 @@ fun AlertifyNavHost(navController: NavHostController) {
         }
         composable("home") {
             HomeScreen(navController)
+        }
+        composable("drawing") {
+            DrawingScreen()
         }
         composable("login") {
             LoginScreen(navController)

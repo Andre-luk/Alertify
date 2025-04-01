@@ -1,6 +1,7 @@
 package com.example.alertify.screens.auth
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -17,7 +18,7 @@ fun WelcomeScreen(navController: NavController) {
     Scaffold(
         bottomBar = {
             Button(
-                onClick = { navController.navigate("home") }, // Correction ici
+                onClick = { navController.navigate("home") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -50,6 +51,16 @@ fun WelcomeScreen(navController: NavController) {
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 32.dp)
+            )
+            Spacer(Modifier.height(30.dp))
+
+            // Icône cliquable pour ouvrir l'application de dessin
+            Image(
+                painter = painterResource(R.drawable.ic_drawing), // Assure-toi d'avoir une icône pour le dessin
+                contentDescription = "Ouvrir l'application de dessin",
+                modifier = Modifier
+                    .size(64.dp)
+                    .clickable { navController.navigate("drawing") } // Redirige vers DrawingScreen
             )
         }
     }
