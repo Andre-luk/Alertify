@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -69,9 +70,13 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation ("androidx.compose.material3:material3:1.0.0")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("com.google.maps.android:maps-compose:4.2.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
@@ -87,4 +92,8 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     implementation ("com.google.android.material:material:1.4.0")
     implementation ("androidx.appcompat:appcompat:1.3.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-firestore-ktx:24.7.0")
+
 }

@@ -1,4 +1,6 @@
 package com.example.alertify.screens.splash
+import androidx.compose.ui.graphics.Color
+
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -32,18 +34,14 @@ fun SplashScreen(navController: NavController) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(R.drawable.ic_logo),
+                painter = painterResource(R.drawable.logo_alertify),
                 contentDescription = "Logo",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier.size(350.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "Alertify",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.displayMedium
-            )
+
         }
     }
 }

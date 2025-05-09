@@ -10,15 +10,17 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
+// Schéma pour le mode sombre en remplaçant primary par FacebookBlue
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
+    primary = FacebookBlue,
+    secondary = PurpleGrey80,  // Tu peux aussi modifier cette couleur si besoin
     tertiary = Pink80
 )
 
+// Schéma pour le mode clair en remplaçant primary par FacebookBlue
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
+    primary = FacebookBlue,
+    secondary = PurpleGrey40,  // Même remarque que pour le mode sombre
     tertiary = Pink40
     // Autres couleurs par défaut peuvent être surchargées ici si nécessaire
 )
@@ -41,7 +43,7 @@ fun AlertifyTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography, // Ta typographie personnalisée ou celle par défaut
         content = content
     )
 }
