@@ -66,7 +66,7 @@ fun WelcomeScreen(navController: NavController) {
             )
 
             Button(
-                onClick = { navController.navigate("home") },
+                onClick = { navController.navigate("login") },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White
                 ),

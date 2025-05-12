@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Alertify</string>
+
+    <!-- ID client OAuth 2.0 Google pour Sign‑In -->
+    <string name="default_web_client_id">
+        107738208104-8jemmg2klrpfa3r323kq94j1ukjk1avc.apps.googleusercontent.com
+    </string>
 </resources>

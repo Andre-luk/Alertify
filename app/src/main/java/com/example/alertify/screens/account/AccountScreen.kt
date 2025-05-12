@@ -2,17 +2,25 @@ package com.example.alertify.screens.account
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.alertify.viewmodels.AccountViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountScreen() {
+fun AccountScreen(
+    viewModel: AccountViewModel = viewModel(),
+    onLogout: () -> Unit
+) {
     val primaryRed = Color(0xFFF44336)
+
+    val userName by viewModel.userName.collectAsState()
+    val userEmail by viewModel.userEmail.collectAsState()
 
     Scaffold(
         topBar = {
@@ -40,13 +48,13 @@ fun AccountScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Nom :", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
-            Text("Email :", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
+            Text("Nom : $userName", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
+            Text("Email : $userEmail", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp))
 
             Spacer(modifier = Modifier.height(40.dp))
 
             Button(
-                onClick = { /* Gérer la modification du profil ici */ },
+                onClick = { /* Ajoute la logique de modification ici */ },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = primaryRed,
@@ -59,7 +67,10 @@ fun AccountScreen() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /* Logique de déconnexion */ },
+                onClick = {
+                    viewModel.logout()
+                    onLogout()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = primaryRed,

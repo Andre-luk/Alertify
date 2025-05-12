@@ -10,11 +10,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ResetPasswordScreen(navController: NavController) {
     val primaryRed = Color(0xFFF44336)
     val context = LocalContext.current
+
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
 
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -57,11 +61,20 @@ fun ResetPasswordScreen(navController: NavController) {
                     newPassword != confirmPassword -> {
                         Toast.makeText(context, "Les mots de passe ne correspondent pas", Toast.LENGTH_SHORT).show()
                     }
+                    currentUser == null -> {
+                        Toast.makeText(context, "Utilisateur non authentifié", Toast.LENGTH_SHORT).show()
+                    }
                     else -> {
-                        Toast.makeText(context, "Mot de passe réinitialisé avec succès", Toast.LENGTH_SHORT).show()
-                        navController.navigate("login") {
-                            popUpTo("reset_password") { inclusive = true }
-                        }
+                        currentUser.updatePassword(newPassword)
+                            .addOnSuccessListener {
+                                Toast.makeText(context, "Mot de passe réinitialisé avec succès", Toast.LENGTH_SHORT).show()
+                                navController.navigate("login") {
+                                    popUpTo("reset_password") { inclusive = true }
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(context, "Erreur : ${e.message}", Toast.LENGTH_LONG).show()
+                            }
                     }
                 }
             },

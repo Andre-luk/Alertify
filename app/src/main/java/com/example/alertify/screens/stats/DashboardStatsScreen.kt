@@ -1,4 +1,4 @@
-package com.example.alertify.screens.alerts
+package com.example.alertify.screens.stats
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +16,12 @@ import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlertsScreen(navController: NavController) {
+fun DashboardStatsScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gestion des alertes", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFD32F2F))
+                title = { Text("Tableau de bord", color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF388E3C))
             )
         }
     ) { innerPadding ->
@@ -31,7 +31,7 @@ fun AlertsScreen(navController: NavController) {
                 .padding(innerPadding),
             contentAlignment = Alignment.Center
         ) {
-            Text("Ici tu afficheras toutes les alertes depuis Firestore")
+            Text("Ici tes statistiques globales depuis Firestore")
         }
     }
 }

@@ -1,78 +1,133 @@
 package com.example.alertify.screens.admin
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(navController: NavController) {
-    val primaryRed = Color(0xFFF44336)
+    val redColor = Color(0xFFF44336)
+    val auth = FirebaseAuth.getInstance()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Admin - Tableau de bord", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = primaryRed)
+                title = { Text("Dashboard Admin", color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = redColor),
+                actions = {
+                    IconButton(onClick = {
+                        auth.signOut()
+                        navController.navigate("login") {
+                            popUpTo("admin_dashboard") { inclusive = true }
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Déconnexion",
+                            tint = Color.White
+                        )
+                    }
+                }
             )
         }
-    ) { padding ->
-        Column(
+    ) { innerPadding ->
+        Box(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            DashboardButton("Gestion des utilisateurs", Icons.Default.Person, primaryRed) {
-                navController.navigate("admin_users")
-            }
-
-            DashboardButton("Gestion des incidents", Icons.Default.ReportProblem, primaryRed) {
-                navController.navigate("admin_incidents")
-            }
-
-            DashboardButton("Gestion des services", Icons.Default.Build, primaryRed) {
-                navController.navigate("admin_services")
-            }
-
-            DashboardButton("Gestion des admins", Icons.Default.Security, primaryRed) {
-                navController.navigate("admin_manage_admins")
-            }
-
-            DashboardButton("Journal des activités", Icons.Default.ListAlt, primaryRed) {
-                navController.navigate("admin_logs")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                NavigationCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    title = "Alertes",
+                    icon = Icons.Default.Notifications,
+                    onClick = { navController.navigate("alertes") },
+                    borderColor = redColor
+                )
+                NavigationCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    title = "Utilisateurs",
+                    icon = Icons.Default.Person,
+                    onClick = { navController.navigate("utilisateurs") },
+                    borderColor = redColor
+                )
+                NavigationCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    title = "ReportForm",
+                    icon = Icons.Default.Description,
+                    onClick = { navController.navigate("reportform") },
+                    borderColor = redColor
+                )
+                NavigationCard(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    title = "Tableau de bord",
+                    icon = Icons.Default.Dashboard,
+                    onClick = { navController.navigate("tableau_de_bord") },
+                    borderColor = redColor
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardButton(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, onClick: () -> Unit) {
+private fun NavigationCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    borderColor: Color
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(2.dp, borderColor),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = color)
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(text, style = MaterialTheme.typography.bodyLarge)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(icon, contentDescription = title, modifier = Modifier.size(32.dp), tint = borderColor)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(title, style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
