@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
-import com.example.alertify.navigation.AlertifyNavHost
+import com.example.alertify.Navigation.AlertifyNavHost
 import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase

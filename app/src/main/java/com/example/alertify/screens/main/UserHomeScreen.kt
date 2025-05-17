@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.ReportProblem
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,13 +18,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.alertify.R
-import com.example.alertify.screens.report.ReportForm
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.storage.FirebaseStorage
@@ -36,17 +33,31 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserHomeScreen(navController: NavController) {
+    val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val user = auth.currentUser
     val storage = FirebaseStorage.getInstance()
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val modernRed = Color(0xFFD32F2F)
 
-    var photoUri by remember { mutableStateOf(user?.photoUrl) }
-    var displayName by remember { mutableStateOf(user?.displayName ?: user?.email.orEmpty()) }
+    if (user == null) {
+        LaunchedEffect(Unit) {
+            navController.navigate("login") {
+                popUpTo("user_home") { inclusive = true }
+            }
+        }
+        return
+    }
 
-    LaunchedEffect(user) {
-        user?.reload()?.addOnCompleteListener {
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var displayName by remember { mutableStateOf(user.displayName ?: user.email.orEmpty()) }
+    var isEditingName by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf(displayName) }
+
+    // Chargement initial de l'utilisateur
+    LaunchedEffect(user.uid) {
+        user.reload().addOnCompleteListener {
             photoUri = user.photoUrl
             displayName = user.displayName ?: user.email.orEmpty()
         }
@@ -56,26 +67,25 @@ fun UserHomeScreen(navController: NavController) {
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
-            user?.let { currentUser ->
-                val ref = storage.reference.child("profile_pics/${currentUser.uid}.jpg")
-                ref.putFile(selectedUri)
-                    .addOnSuccessListener {
-                        ref.downloadUrl.addOnSuccessListener { downloadUrl ->
-                            val update = UserProfileChangeRequest.Builder()
-                                .setPhotoUri(downloadUrl)
-                                .build()
-                            currentUser.updateProfile(update)
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        coroutineScope.launch {
-                                            currentUser.reload().addOnCompleteListener {
-                                                photoUri = currentUser.photoUrl
-                                            }
-                                        }
+            val ref = storage.reference.child("profile_pics/${user.uid}.jpg")
+            ref.putFile(selectedUri).addOnSuccessListener {
+                ref.downloadUrl.addOnSuccessListener { downloadUrl ->
+                    val update = UserProfileChangeRequest.Builder()
+                        .setPhotoUri(downloadUrl)
+                        .build()
+                    user.updateProfile(update).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            coroutineScope.launch {
+                                user.reload().addOnCompleteListener {
+                                    photoUri = user.photoUrl
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Photo mise à jour !")
                                     }
                                 }
+                            }
                         }
                     }
+                }
             }
         }
     }
@@ -85,20 +95,24 @@ fun UserHomeScreen(navController: NavController) {
             TopAppBar(
                 colors = TopAppBarDefaults.smallTopAppBarColors(
                     containerColor = modernRed,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    titleContentColor = Color.White
                 ),
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = R.drawable.logo_alertify),
-                            contentDescription = "Logo Alertify",
+                            painter = if (photoUri != null)
+                                rememberAsyncImagePainter(model = photoUri)
+                            else
+                                painterResource(id = R.drawable.fondecran),
+                            contentDescription = "Photo de profil",
                             modifier = Modifier
-                                .size(48.dp)
-                                .padding(end = 12.dp)
+                                .size(36.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Alertify",
+                            text = displayName,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -106,7 +120,8 @@ fun UserHomeScreen(navController: NavController) {
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -115,12 +130,16 @@ fun UserHomeScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // Bloc de changement de photo et nom
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
-                    painter = rememberAsyncImagePainter(model = photoUri),
+                    painter = if (photoUri != null)
+                        rememberAsyncImagePainter(model = photoUri)
+                    else
+                        painterResource(id = R.drawable.fondecran),
                     contentDescription = "Photo de profil",
                     modifier = Modifier
                         .size(72.dp)
@@ -129,13 +148,49 @@ fun UserHomeScreen(navController: NavController) {
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(16.dp))
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold
-                )
+                if (isEditingName) {
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it },
+                        label = { Text("Nom d'affichage") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                val update = UserProfileChangeRequest.Builder()
+                                    .setDisplayName(newName)
+                                    .build()
+                                user.updateProfile(update).addOnCompleteListener {
+                                    if (it.isSuccessful) {
+                                        displayName = newName
+                                        isEditingName = false
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Nom mis à jour")
+                                        }
+                                    }
+                                }
+                            }) {
+                                Icon(Icons.Default.Check, contentDescription = "Valider")
+                            }
+                        }
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { isEditingName = true }
+                    ) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Modifier", tint = modernRed)
+                    }
+                }
             }
 
+            // Actions principales
             val actions = listOf(
                 ActionItem("Signaler incident", Icons.Default.ReportProblem) {
                     navController.navigate("report_form")
@@ -148,7 +203,9 @@ fun UserHomeScreen(navController: NavController) {
                 },
                 ActionItem("Déconnexion", Icons.Default.ExitToApp) {
                     auth.signOut()
-                    navController.navigate("login") { popUpTo("user_home") { inclusive = true } }
+                    navController.navigate("login") {
+                        popUpTo("user_home") { inclusive = true }
+                    }
                 }
             )
 

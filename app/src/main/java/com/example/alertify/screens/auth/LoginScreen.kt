@@ -61,6 +61,9 @@ fun LoginScreen(navController: NavController) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
 
+    // Snackbar state
+    val snackbarHostState = remember { SnackbarHostState() }
+
     // Google Sign-In setup
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -83,152 +86,174 @@ fun LoginScreen(navController: NavController) {
                         coroutineScope,
                         db,
                         navController,
-                        context
+                        context,
+                        snackbarHostState
                     )
                 }
             } catch (e: ApiException) {
-                error = "Google sign-in failed: ${e.localizedMessage}"
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Google sign-in failed: ${e.localizedMessage}")
+                }
                 isLoading = false
                 showForm = true
             }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        AnimatedVisibility(
-            visible = showForm,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Connexion", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(20.dp))
+            AnimatedVisibility(
+                visible = showForm,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Connexion", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.height(20.dp))
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    leadingIcon = { Icon(Icons.Default.MailOutline, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Mot de passe") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (error.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(error, color = Color.Red)
-                }
-
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Mot de passe oublié ?",
-                    modifier = Modifier.clickable { navController.navigate("forgot_password") },
-                    color = redColor
-                )
-                Spacer(Modifier.height(20.dp))
-
-                Button(
-                    onClick = {
-                        error = ""
-                        if (email.isBlank() || password.isBlank()) {
-                            error = "Veuillez remplir tous les champs"
-                            return@Button
-                        }
-                        isLoading = true
-                        showForm = false
-                        auth.signInWithEmailAndPassword(email.trim(), password.trim())
-                            .addOnSuccessListener { res ->
-                                coroutineScope.launch {
-                                    delay(1000)
-                                    navigateByRole(res.user, db, navController)
-                                }
-                            }
-                            .addOnFailureListener {
-                                error = "Email ou mot de passe incorrect"
-                                isLoading = false
-                                showForm = true
-                            }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = redColor)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Se connecter", color = Color.White)
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                Text("OU", style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        val signInIntent: Intent = googleClient.signInIntent
-                        googleLauncher.launch(signInIntent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_google),
-                        contentDescription = "Google icon",
-                        modifier = Modifier.size(24.dp)
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email") },
+                        leadingIcon = { Icon(Icons.Default.MailOutline, contentDescription = null) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Se connecter avec Google")
-                }
 
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    "Créer un compte",
-                    modifier = Modifier.clickable { navController.navigate("register") },
-                    color = redColor
+                    Spacer(Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Mot de passe") },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (error.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(error, color = Color.Red)
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Mot de passe oublié ?",
+                        modifier = Modifier.clickable { navController.navigate("forgot_password") },
+                        color = redColor
+                    )
+                    Spacer(Modifier.height(20.dp))
+
+                    Button(
+                        onClick = {
+                            error = ""
+                            if (email.isBlank() || password.isBlank()) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Veuillez remplir tous les champs")
+                                }
+                                return@Button
+                            }
+                            isLoading = true
+                            showForm = false
+                            auth.signInWithEmailAndPassword(email.trim(), password.trim())
+                                .addOnSuccessListener { res ->
+                                    coroutineScope.launch {
+                                        delay(1000)
+                                        navigateByRole(res.user, db, navController)
+                                    }
+                                }
+                                .addOnFailureListener { exc ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Email ou mot de passe incorrect")
+                                    }
+                                    isLoading = false
+                                    showForm = true
+                                }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = redColor)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Se connecter", color = Color.White)
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            val signInIntent: Intent = googleClient.signInIntent
+                            googleLauncher.launch(signInIntent)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_google),
+                                contentDescription = "Google icon",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text("Se connecter avec Google", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        "Créer un compte",
+                        modifier = Modifier.clickable { navController.navigate("register") },
+                        color = redColor
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isLoggedIn,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Connexion réussie",
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(64.dp)
                 )
             }
-        }
-
-        AnimatedVisibility(
-            visible = isLoggedIn,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut()
-        ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Connexion réussie",
-                tint = Color(0xFF4CAF50),
-                modifier = Modifier.size(64.dp)
-            )
         }
     }
 }
@@ -250,13 +275,19 @@ private fun firebaseAuthWithGoogle(
     coroutineScope: CoroutineScope,
     db: FirebaseFirestore,
     navController: NavController,
-    context: Context
+    context: Context,
+    snackbarHostState: SnackbarHostState
 ) {
     auth.signInWithCredential(GoogleAuthProvider.getCredential(account.idToken, null))
         .addOnSuccessListener { res ->
             coroutineScope.launch {
                 delay(1000)
                 navigateByRole(res.user, db, navController)
+            }
+        }
+        .addOnFailureListener { exc ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Erreur lors de la connexion Google : ${exc.localizedMessage}")
             }
         }
 }

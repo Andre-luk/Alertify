@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -39,7 +40,7 @@ fun RegisterScreen(navController: NavController) {
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
 
-    // State variables
+    // États des champs
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -50,15 +51,14 @@ fun RegisterScreen(navController: NavController) {
     var dateNaissance by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var isSubmitted by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf("") }
 
     val sexeOptions = listOf("M", "F")
     var selectedSexe by remember { mutableStateOf(sexeOptions.first()) }
 
-    // DatePicker setup
+    // DatePicker dialog
     val calendar = Calendar.getInstance()
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val datePickerDialog = DatePickerDialog(
@@ -72,7 +72,14 @@ fun RegisterScreen(navController: NavController) {
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    // Save user in Firestore
+    // Validation en temps réel (exemples simples)
+    val isPrenomValid = prenom.isNotBlank()
+    val isNomValid = nom.isNotBlank()
+    val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val isPasswordValid = password.length >= 6
+    val isConfirmPasswordValid = confirmPassword == password && confirmPassword.isNotBlank()
+    val isDateNaissanceValid = dateNaissance.isNotBlank()
+
     fun saveUserData(userId: String) {
         val userMap = mapOf(
             "prenom" to prenom,
@@ -87,21 +94,19 @@ fun RegisterScreen(navController: NavController) {
         db.collection("users").document(userId)
             .set(userMap)
             .addOnFailureListener {
-                error = "Erreur lors de l'enregistrement dans Firestore."
+                errorMessage = "Erreur lors de l'enregistrement dans Firestore."
             }
     }
 
-    // Registration logic
     fun register() {
-        if (prenom.isBlank() || nom.isBlank() || email.isBlank()
-            || password.isBlank() || password != confirmPassword
-            || dateNaissance.isBlank()
+        if (!isPrenomValid || !isNomValid || !isEmailValid || !isPasswordValid
+            || !isConfirmPasswordValid || !isDateNaissanceValid
         ) {
-            showError = true
+            errorMessage = "Veuillez remplir correctement tous les champs obligatoires."
             return
         }
 
-        showError = false
+        errorMessage = ""
         isLoading = true
 
         auth.createUserWithEmailAndPassword(email, password)
@@ -115,7 +120,7 @@ fun RegisterScreen(navController: NavController) {
                         popUpTo("register") { inclusive = true }
                     }
                 } else {
-                    error = task.exception?.localizedMessage ?: "Erreur lors de l'inscription"
+                    errorMessage = task.exception?.localizedMessage ?: "Erreur lors de l'inscription"
                 }
             }
     }
@@ -130,36 +135,38 @@ fun RegisterScreen(navController: NavController) {
     ) {
         Text("Créer un compte", style = MaterialTheme.typography.headlineMedium)
 
-        AnimatedVisibility(visible = showError) {
-            Text("Veuillez remplir tous les champs obligatoires.", color = Color.Red)
-        }
-        AnimatedVisibility(visible = error.isNotEmpty()) {
-            Text(error, color = MaterialTheme.colorScheme.error)
+        AnimatedVisibility(visible = errorMessage.isNotEmpty()) {
+            Text(errorMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.fillMaxWidth())
         }
 
-        // Identity Card
+        // Section Identité
         Card(
             Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFFBE9E7))
         ) {
-            Column(Modifier.padding(12.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Identité", fontSize = 18.sp, color = primaryRed)
+
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = prenom,
                         onValueChange = { prenom = it },
                         label = { Text("Prénom *") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        isError = !isPrenomValid && prenom.isNotEmpty(),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                     )
                     OutlinedTextField(
                         value = nom,
                         onValueChange = { nom = it },
                         label = { Text("Nom *") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        isError = !isNomValid && nom.isNotEmpty(),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                Text("Sexe", modifier = Modifier.align(Alignment.Start))
+
+                Text("Sexe", modifier = Modifier.padding(top = 4.dp))
                 Row {
                     sexeOptions.forEach { sexe ->
                         Row(
@@ -177,45 +184,48 @@ fun RegisterScreen(navController: NavController) {
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = dateNaissance,
-                    onValueChange = { },
+                    onValueChange = {},
                     label = { Text("Date de naissance *") },
                     readOnly = true,
                     trailingIcon = {
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
-                            contentDescription = "Choisir une date",
+                            contentDescription = "Choisir une date de naissance",
                             modifier = Modifier.clickable { datePickerDialog.show() }
                         )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { datePickerDialog.show() }
+                        .clickable { datePickerDialog.show() },
+                    isError = !isDateNaissanceValid && dateNaissance.isNotEmpty()
                 )
             }
         }
 
-        // Contact Card
+        // Section Contact
         Card(
             Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6))
         ) {
-            Column(Modifier.padding(12.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Contact", fontSize = 18.sp, color = primaryRed)
+
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
                     label = { Text("Email *") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    isError = !isEmailValid && email.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
                     label = { Text("Téléphone (optionnel)") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Phone),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -227,13 +237,14 @@ fun RegisterScreen(navController: NavController) {
             }
         }
 
-        // Security Card
+        // Section Sécurité
         Card(
             Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F7FA))
         ) {
-            Column(Modifier.padding(12.dp)) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Sécurité", fontSize = 18.sp, color = primaryRed)
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -243,12 +254,15 @@ fun RegisterScreen(navController: NavController) {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = null
+                                contentDescription = if (passwordVisible) "Cacher le mot de passe" else "Afficher le mot de passe"
                             )
                         }
                     },
+                    isError = !isPasswordValid && password.isNotEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
@@ -258,38 +272,40 @@ fun RegisterScreen(navController: NavController) {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
                                 imageVector = if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = null
+                                contentDescription = if (confirmPasswordVisible) "Cacher la confirmation" else "Afficher la confirmation"
                             )
                         }
                     },
+                    isError = !isConfirmPasswordValid && confirmPassword.isNotEmpty(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
 
-        // Loading & Submit
-        AnimatedVisibility(visible = isLoading) {
-            CircularProgressIndicator(color = primaryRed)
-        }
-        AnimatedVisibility(visible = !isLoading && !isSubmitted) {
-            Button(
-                onClick = { register() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = primaryRed)
-            ) {
-                Text("S'inscrire")
-            }
-        }
-        AnimatedVisibility(visible = isSubmitted, enter = fadeIn(), exit = fadeOut()) {
-            Text("Inscription réussie !", color = Color.Green, fontSize = 16.sp)
-        }
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            "Déjà un compte ? Connectez-vous",
-            color = primaryRed,
-            modifier = Modifier.clickable { navController.navigate("login") }
-        )
+        Button(
+            onClick = { register() },
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = primaryRed)
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                Text("S'inscrire", color = Color.White)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(onClick = { navController.popBackStack() }) {
+            Text("Déjà un compte ? Connexion", color = primaryRed)
+        }
     }
 }
